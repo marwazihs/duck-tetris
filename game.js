@@ -7,6 +7,7 @@ class Tetris {
         this.setupCanvas();
         this.initGame();
         this.bindEvents();
+        this.loadHighScores();
     }
 
     setupCanvas() {
@@ -317,6 +318,60 @@ class Tetris {
         this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
         this.ctx.font = '20px Arial';
         this.ctx.fillText('Press Reset to play again', this.canvas.width / 2, this.canvas.height / 2 + 40);
+
+        // Check for high score when game is over
+        this.checkHighScore(this.score);
+    }
+
+    loadHighScores() {
+        this.highScores = JSON.parse(localStorage.getItem('tetrisHighScores')) || [];
+        this.updateHighScoresDisplay();
+    }
+
+    updateHighScoresDisplay() {
+        const highScoresList = document.getElementById('highScoresList');
+        highScoresList.innerHTML = '';
+        
+        this.highScores
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10)
+            .forEach((score, index) => {
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'score-item';
+                scoreItem.innerHTML = `
+                    <span>#${index + 1} ${score.name}</span>
+                    <span>${score.score}</span>
+                `;
+                highScoresList.appendChild(scoreItem);
+            });
+    }
+
+    checkHighScore(score) {
+        const lowestScore = this.highScores.length < 10 ? 0 : 
+            Math.min(...this.highScores.map(s => s.score));
+        
+        if (this.highScores.length < 10 || score > lowestScore) {
+            const form = document.getElementById('newHighScoreForm');
+            const input = document.getElementById('playerName');
+            form.classList.remove('hidden');
+            input.focus();
+
+            const saveButton = document.getElementById('saveScore');
+            const saveHighScore = () => {
+                const name = input.value.trim() || 'Anonymous';
+                this.highScores.push({ name, score });
+                this.highScores.sort((a, b) => b.score - a.score);
+                if (this.highScores.length > 10) {
+                    this.highScores.pop();
+                }
+                localStorage.setItem('tetrisHighScores', JSON.stringify(this.highScores));
+                this.updateHighScoresDisplay();
+                form.classList.add('hidden');
+                saveButton.removeEventListener('click', saveHighScore);
+            };
+
+            saveButton.addEventListener('click', saveHighScore);
+        }
     }
 
     startGame() {
