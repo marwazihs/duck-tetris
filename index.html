@@ -7,58 +7,63 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="game-container">
-        <header>
-            <div class="duck-animation">
-                <img src="duck.svg" alt="Flying Duck" class="flying-duck">
+    <div class="page-container">
+        <div class="game-container">
+            <header>
+                <div class="duck-animation">
+                    <img src="duck.svg" alt="Flying Duck" class="flying-duck">
+                </div>
+                <h1>Duck Tetris</h1>
+            </header>
+            
+            <div class="game-wrapper">
+                <div class="game-info">
+                    <div class="score-board">
+                        <h2>Score: <span id="score">0</span></h2>
+                        <h3>Level: <span id="level">1</span></h3>
+                        <h3>Lines: <span id="lines">0</span></h3>
+                    </div>
+                    
+                    <div class="difficulty-selector">
+                        <label for="difficulty">Difficulty:</label>
+                        <select id="difficulty">
+                            <option value="1">Level 1 - Easy</option>
+                            <option value="2">Level 2 - Medium</option>
+                            <option value="3">Level 3 - Hard</option>
+                            <option value="4">Level 4 - Expert</option>
+                            <option value="5">Level 5 - Master</option>
+                        </select>
+                    </div>
+
+                    <div class="next-piece">
+                        <h3>Next Piece:</h3>
+                        <canvas id="nextPiece"></canvas>
+                    </div>
+
+                    <div class="high-scores">
+                        <h3>Top 10 Scores</h3>
+                        <div id="highScoresList" class="high-scores-list"></div>
+                    </div>
+
+                    <div id="newHighScoreForm" class="new-high-score-form hidden">
+                        <h3>New High Score!</h3>
+                        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+                        <button id="saveScore">Save Score</button>
+                    </div>
+
+                    <div class="controls">
+                        <button id="startBtn">Start Game</button>
+                        <button id="pauseBtn">Pause</button>
+                        <button id="resetBtn">Reset</button>
+                    </div>
+                </div>
+
+                <canvas id="gameBoard"></canvas>
             </div>
-            <h1>Duck Tetris</h1>
-        </header>
-        
-        <div class="game-wrapper">
-            <div class="game-info">
-                <div class="score-board">
-                    <h2>Score: <span id="score">0</span></h2>
-                    <h3>Level: <span id="level">1</span></h3>
-                    <h3>Lines: <span id="lines">0</span></h3>
-                </div>
-                
-                <div class="difficulty-selector">
-                    <label for="difficulty">Difficulty:</label>
-                    <select id="difficulty">
-                        <option value="1">Level 1 - Easy</option>
-                        <option value="2">Level 2 - Medium</option>
-                        <option value="3">Level 3 - Hard</option>
-                        <option value="4">Level 4 - Expert</option>
-                        <option value="5">Level 5 - Master</option>
-                    </select>
-                </div>
-
-                <div class="next-piece">
-                    <h3>Next Piece:</h3>
-                    <canvas id="nextPiece"></canvas>
-                </div>
-
-                <div class="high-scores">
-                    <h3>Top 10 Scores</h3>
-                    <div id="highScoresList" class="high-scores-list"></div>
-                </div>
-
-                <div id="newHighScoreForm" class="new-high-score-form hidden">
-                    <h3>New High Score!</h3>
-                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
-                    <button id="saveScore">Save Score</button>
-                </div>
-
-                <div class="controls">
-                    <button id="startBtn">Start Game</button>
-                    <button id="pauseBtn">Pause</button>
-                    <button id="resetBtn">Reset</button>
-                </div>
-            </div>
-
-            <canvas id="gameBoard"></canvas>
         </div>
+        <footer class="game-footer">
+            <p>Created with ❤️ by <a href="https://github.com/marwazihs" target="_blank">marwazihs</a> & <a href="https://github.com/rubyoneknoby" target="_blank">rubyoneknoby</a></p>
+        </footer>
     </div>
     <script src="game.js"></script>
 </body>
