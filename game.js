@@ -32,16 +32,16 @@ class Tetris {
     }
 
     initializeGameAssets() {
-        // Tetromino colors
+        // Tetromino colors using the provided palette
         this.colors = [
             null,
-            '#FF0000', // Red
-            '#00FF00', // Green
-            '#0000FF', // Blue
-            '#FFFF00', // Yellow
-            '#00FFFF', // Cyan
-            '#FF00FF', // Magenta
-            '#FFA500'  // Orange
+            '#F94144', // Red
+            '#90BE6D', // Green
+            '#277DA1', // Blue
+            '#F9C74F', // Yellow
+            '#43AA8B', // Teal
+            '#F8961E', // Orange
+            '#F3722C'  // Dark Orange
         ];
 
         // Tetromino shapes
@@ -479,7 +479,7 @@ class Tetris {
     }
 
     drawGrid() {
-        this.ctx.strokeStyle = '#CCCCCC';
+        this.ctx.strokeStyle = '#577590';  // Using the slate blue color
         this.ctx.lineWidth = 0.5;
 
         // Vertical lines

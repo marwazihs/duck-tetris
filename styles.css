@@ -1,8 +1,9 @@
 :root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
-    --background-color: #ecf0f1;
+    --primary-color: #4D908E;    /* Using the teal color 43AA8B */
+    --secondary-color: #277DA1;  /* Using the blue color 277DA1 */
+    --accent-color: #F94144;     /* Using the red color F94144 */
+    --background-color: #F9C74F; /* Using the yellow color F9C74F */
+    --text-color: #577590;       /* Using the slate blue 577590 */
 }
 
 * {
