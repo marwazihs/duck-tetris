@@ -10,21 +10,63 @@ class Tetris {
         this.nextCtx.imageSmoothingEnabled = false;
         
         this.setupCanvas();
-        this.initGame();
         this.bindEvents();
         this.loadHighScores();
         
-        // Request animation frame for smooth rendering
-        this.lastRender = 0;
-        this.lastDrop = 0;
-        this.animate();
+        // Initialize game state
+        this.isRunning = false;
+        this.isPaused = false;
+        this.gameOver = false;
+        this.score = 0;
+        this.lines = 0;
+        this.level = 1;
+        
+        // Initialize empty board
+        this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        
+        // Initialize colors and shapes
+        this.initializeGameAssets();
+        
+        // Draw empty board
+        this.draw();
+    }
+
+    initializeGameAssets() {
+        // Tetromino colors
+        this.colors = [
+            null,
+            '#FF0000', // Red
+            '#00FF00', // Green
+            '#0000FF', // Blue
+            '#FFFF00', // Yellow
+            '#00FFFF', // Cyan
+            '#FF00FF', // Magenta
+            '#FFA500'  // Orange
+        ];
+
+        // Tetromino shapes
+        this.shapes = {
+            I: [[1, 1, 1, 1]],
+            J: [[1, 0, 0], [1, 1, 1]],
+            L: [[0, 0, 1], [1, 1, 1]],
+            O: [[1, 1], [1, 1]],
+            S: [[0, 1, 1], [1, 1, 0]],
+            T: [[0, 1, 0], [1, 1, 1]],
+            Z: [[1, 1, 0], [0, 1, 1]]
+        };
     }
 
     animate(timestamp = 0) {
+        // Only run animation if game is active
+        if (!this.isRunning) {
+            this.draw();
+            return;
+        }
+        
         // Calculate time passed
         const elapsed = timestamp - this.lastRender;
         
-        // Update piece position if enough time has passed
+        // Update piece position if game is running
         if (!this.isPaused && !this.gameOver) {
             if (timestamp - this.lastDrop >= this.dropInterval) {
                 this.movePiece(0, 1);
@@ -53,43 +95,6 @@ class Tetris {
         this.blockSize = 30;
         this.cols = this.canvas.width / this.blockSize;
         this.rows = this.canvas.height / this.blockSize;
-    }
-
-    initGame() {
-        // Game state
-        this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
-        this.score = 0;
-        this.lines = 0;
-        this.level = 1;
-        this.gameOver = false;
-        this.isPaused = false;
-        
-        // Tetromino colors
-        this.colors = [
-            null,
-            '#FF0000', // Red
-            '#00FF00', // Green
-            '#0000FF', // Blue
-            '#FFFF00', // Yellow
-            '#00FFFF', // Cyan
-            '#FF00FF', // Magenta
-            '#FFA500'  // Orange
-        ];
-
-        // Tetromino shapes
-        this.shapes = {
-            I: [[1, 1, 1, 1]],
-            J: [[1, 0, 0], [1, 1, 1]],
-            L: [[0, 0, 1], [1, 1, 1]],
-            O: [[1, 1], [1, 1]],
-            S: [[0, 1, 1], [1, 1, 0]],
-            T: [[0, 1, 0], [1, 1, 1]],
-            Z: [[1, 1, 0], [0, 1, 1]]
-        };
-
-        this.createNewPiece();
-        this.createNextPiece();
-        this.updateSpeed();
     }
 
     bindEvents() {
@@ -122,7 +127,12 @@ class Tetris {
         window.addEventListener('keyup', handleKeyUp);
         
         // Focus handling
-        gameContainer.addEventListener('click', () => gameContainer.focus());
+        gameContainer.addEventListener('click', (e) => {
+            // Don't focus if clicking on select or its children
+            if (!e.target.closest('.difficulty-selector')) {
+                gameContainer.focus();
+            }
+        });
         gameContainer.addEventListener('blur', () => {
             // Clear key states when losing focus
             this.keyStates.clear();
@@ -407,16 +417,33 @@ class Tetris {
     }
 
     drawGameOver() {
+        // Semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // Calculate center position
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        // Draw text background for better readability
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(centerX - 150, centerY - 60, 300, 150);
+        
+        // Game Over text
         this.ctx.fillStyle = '#FFFFFF';
-        this.ctx.font = '30px Arial';
+        this.ctx.font = 'bold 36px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('GAME OVER', centerX, centerY - 30);
+        
+        // Score text
+        this.ctx.font = '24px Arial';
+        this.ctx.fillText(`Final Score: ${this.score}`, centerX, centerY + 10);
+        
+        // Instruction text
         this.ctx.font = '20px Arial';
-        this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
-        this.ctx.fillText('Press Reset to play again', this.canvas.width / 2, this.canvas.height / 2 + 80);
+        this.ctx.fillStyle = '#CCCCCC';
+        this.ctx.fillText('Press Reset to play again', centerX, centerY + 50);
     }
 
     loadHighScores() {
@@ -474,29 +501,74 @@ class Tetris {
     }
 
     startGame() {
-        if (!this.gameLoop) {
-            this.resetGame();
-            this.lastDrop = performance.now();
-            this.gameLoop = true;
-        }
+        if (this.isRunning) return; // Prevent multiple starts
+        
+        // Reset game state
+        this.isRunning = true;
+        this.isPaused = false;
+        this.gameOver = false;
+        this.score = 0;
+        this.lines = 0;
+        this.level = parseInt(document.getElementById('difficulty').value) || 1;
+        
+        // Clear the board
+        this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        
+        // Update speed based on level
+        this.updateSpeed();
+        
+        // Create initial pieces
+        this.createNewPiece();
+        this.createNextPiece();
+        
+        // Start animation loop
+        this.lastRender = 0;
+        this.lastDrop = performance.now();
+        requestAnimationFrame(this.animate.bind(this));
+        
+        // Update UI
+        document.getElementById('score').textContent = '0';
+        document.getElementById('lines').textContent = '0';
+        document.getElementById('level').textContent = this.level;
+        document.getElementById('pauseBtn').textContent = 'Pause';
     }
 
     togglePause() {
+        if (!this.isRunning || this.gameOver) return;
+        
         this.isPaused = !this.isPaused;
+        if (!this.isPaused) {
+            this.lastDrop = performance.now();
+        }
+        
+        // Update pause button text
         document.getElementById('pauseBtn').textContent = this.isPaused ? 'Resume' : 'Pause';
     }
 
     resetGame() {
-        clearInterval(this.gameLoop);
-        this.gameLoop = null;
-        this.initGame();
-        document.getElementById('newHighScoreForm').classList.add('hidden');
+        // Stop the current game
+        this.isRunning = false;
+        this.gameOver = false;
+        this.isPaused = false;
+        
+        // Reset score and board
+        this.score = 0;
+        this.lines = 0;
+        this.level = 1;
+        this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        
+        // Update UI
+        document.getElementById('score').textContent = '0';
+        document.getElementById('lines').textContent = '0';
+        document.getElementById('level').textContent = '1';
+        document.getElementById('pauseBtn').textContent = 'Pause';
+        
+        // Draw empty board
         this.draw();
     }
 }
 
-// Start the game when the window loads
+// Initialize the game when the window loads
 window.addEventListener('load', () => {
     const game = new Tetris();
-    game.draw();
 });
