@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(0 -5)">
+        <!-- Body -->
+        <path d="M70 50c0-11-9-20-20-20s-20 9-20 20c0 11 9 20 20 20s20-9 20-20" fill="#FFD700"/>
+        <!-- Wing -->
+        <path d="M55 45c0-8-6-15-15-15s-15 6-15 15c0 8 6 15 15 15s15-6 15-15" fill="#FFA500"/>
+        <!-- Head -->
+        <circle cx="65" cy="40" r="12" fill="#FFD700"/>
+        <!-- Eye -->
+        <circle cx="68" cy="37" r="2" fill="#000"/>
+        <!-- Beak -->
+        <path d="M75 40l10 5-10 5z" fill="#FFA500"/>
+    </g>
+</svg>
