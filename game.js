@@ -4,10 +4,40 @@ class Tetris {
         this.nextCanvas = document.getElementById('nextPiece');
         this.ctx = this.canvas.getContext('2d');
         this.nextCtx = this.nextCanvas.getContext('2d');
+        
+        // Enable faster rendering
+        this.ctx.imageSmoothingEnabled = false;
+        this.nextCtx.imageSmoothingEnabled = false;
+        
         this.setupCanvas();
         this.initGame();
         this.bindEvents();
         this.loadHighScores();
+        
+        // Request animation frame for smooth rendering
+        this.lastRender = 0;
+        this.lastDrop = 0;
+        this.animate();
+    }
+
+    animate(timestamp = 0) {
+        // Calculate time passed
+        const elapsed = timestamp - this.lastRender;
+        
+        // Update piece position if enough time has passed
+        if (!this.isPaused && !this.gameOver) {
+            if (timestamp - this.lastDrop >= this.dropInterval) {
+                this.movePiece(0, 1);
+                this.lastDrop = timestamp;
+            }
+        }
+
+        // Render the game
+        this.draw();
+        
+        // Schedule next frame
+        this.lastRender = timestamp;
+        requestAnimationFrame(this.animate.bind(this));
     }
 
     setupCanvas() {
@@ -63,7 +93,43 @@ class Tetris {
     }
 
     bindEvents() {
-        document.addEventListener('keydown', this.handleKeyPress.bind(this));
+        const gameContainer = document.querySelector('.game-container');
+        
+        // Key state tracking for responsive controls
+        this.keyStates = new Set();
+        
+        // Handle key events
+        const handleKeyDown = (e) => {
+            if([32, 37, 38, 39, 40].includes(e.keyCode)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (!this.gameOver && !this.isPaused && !this.keyStates.has(e.keyCode)) {
+                    this.keyStates.add(e.keyCode);
+                    this.handleGameInput(e.keyCode);
+                }
+            }
+        };
+
+        const handleKeyUp = (e) => {
+            if([32, 37, 38, 39, 40].includes(e.keyCode)) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.keyStates.delete(e.keyCode);
+            }
+        };
+
+        // Add event listeners with proper options
+        window.addEventListener('keydown', handleKeyDown, { passive: false });
+        window.addEventListener('keyup', handleKeyUp, { passive: false });
+        gameContainer.addEventListener('keydown', handleKeyDown, { passive: false });
+        gameContainer.addEventListener('keyup', handleKeyUp, { passive: false });
+        
+        // Focus handling
+        gameContainer.addEventListener('click', () => gameContainer.focus());
+        gameContainer.focus();
+
+        // Other controls
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
@@ -71,6 +137,26 @@ class Tetris {
             this.level = parseInt(e.target.value);
             this.updateSpeed();
         });
+    }
+
+    handleGameInput(keyCode) {
+        switch(keyCode) {
+            case 37: // Left
+                this.movePiece(-1, 0);
+                break;
+            case 39: // Right
+                this.movePiece(1, 0);
+                break;
+            case 40: // Down
+                this.movePiece(0, 1);
+                break;
+            case 38: // Up (Rotate)
+                this.rotatePiece();
+                break;
+            case 32: // Space (Hard drop)
+                this.hardDrop();
+                break;
+        }
     }
 
     updateSpeed() {
@@ -121,28 +207,6 @@ class Tetris {
                 }
             });
         });
-    }
-
-    handleKeyPress(event) {
-        if (this.gameOver || this.isPaused) return;
-
-        switch(event.keyCode) {
-            case 37: // Left
-                this.movePiece(-1, 0);
-                break;
-            case 39: // Right
-                this.movePiece(1, 0);
-                break;
-            case 40: // Down
-                this.movePiece(0, 1);
-                break;
-            case 38: // Up (Rotate)
-                this.rotatePiece();
-                break;
-            case 32: // Space (Hard drop)
-                this.hardDrop();
-                break;
-        }
     }
 
     movePiece(dx, dy) {
@@ -212,6 +276,20 @@ class Tetris {
                 }
             });
         });
+
+        // Check for game over after locking piece
+        if (this.currentPiece.y <= 0) {
+            this.gameOver = true;
+            this.endGame();
+            return;
+        }
+    }
+
+    endGame() {
+        clearInterval(this.gameLoop);
+        this.gameLoop = null;
+        this.checkHighScore(this.score);
+        this.draw(); // Draw final state with game over message
     }
 
     clearLines() {
@@ -243,30 +321,51 @@ class Tetris {
     }
 
     draw() {
-        // Clear canvas
+        // Clear canvas with a single operation
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw board
+        // Draw board - batch similar colors
+        const colorGroups = new Map();
         this.board.forEach((row, y) => {
             row.forEach((color, x) => {
                 if (color) {
-                    this.drawBlock(x, y, color);
+                    if (!colorGroups.has(color)) {
+                        colorGroups.set(color, []);
+                    }
+                    colorGroups.get(color).push({x, y});
                 }
+            });
+        });
+
+        // Draw each color group
+        colorGroups.forEach((positions, color) => {
+            this.ctx.fillStyle = color;
+            positions.forEach(({x, y}) => {
+                this.ctx.fillRect(
+                    x * this.blockSize,
+                    y * this.blockSize,
+                    this.blockSize - 1,
+                    this.blockSize - 1
+                );
             });
         });
 
         // Draw current piece
-        this.currentPiece.shape.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value) {
-                    this.drawBlock(
-                        this.currentPiece.x + x,
-                        this.currentPiece.y + y,
-                        this.currentPiece.color
-                    );
-                }
+        if (this.currentPiece) {
+            this.ctx.fillStyle = this.currentPiece.color;
+            this.currentPiece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        this.ctx.fillRect(
+                            (this.currentPiece.x + x) * this.blockSize,
+                            (this.currentPiece.y + y) * this.blockSize,
+                            this.blockSize - 1,
+                            this.blockSize - 1
+                        );
+                    }
+                });
             });
-        });
+        }
 
         // Draw grid
         this.drawGrid();
@@ -317,10 +416,8 @@ class Tetris {
         this.ctx.textAlign = 'center';
         this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
         this.ctx.font = '20px Arial';
-        this.ctx.fillText('Press Reset to play again', this.canvas.width / 2, this.canvas.height / 2 + 40);
-
-        // Check for high score when game is over
-        this.checkHighScore(this.score);
+        this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+        this.ctx.fillText('Press Reset to play again', this.canvas.width / 2, this.canvas.height / 2 + 80);
     }
 
     loadHighScores() {
@@ -354,10 +451,16 @@ class Tetris {
             const form = document.getElementById('newHighScoreForm');
             const input = document.getElementById('playerName');
             form.classList.remove('hidden');
+            input.value = ''; // Clear any previous input
             input.focus();
 
+            // Remove any existing event listeners
             const saveButton = document.getElementById('saveScore');
-            const saveHighScore = () => {
+            const newSaveButton = saveButton.cloneNode(true);
+            saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+
+            // Add new event listener
+            newSaveButton.addEventListener('click', () => {
                 const name = input.value.trim() || 'Anonymous';
                 this.highScores.push({ name, score });
                 this.highScores.sort((a, b) => b.score - a.score);
@@ -367,21 +470,15 @@ class Tetris {
                 localStorage.setItem('tetrisHighScores', JSON.stringify(this.highScores));
                 this.updateHighScoresDisplay();
                 form.classList.add('hidden');
-                saveButton.removeEventListener('click', saveHighScore);
-            };
-
-            saveButton.addEventListener('click', saveHighScore);
+            });
         }
     }
 
     startGame() {
         if (!this.gameLoop) {
-            this.gameLoop = setInterval(() => {
-                if (!this.isPaused && !this.gameOver) {
-                    this.movePiece(0, 1);
-                    this.draw();
-                }
-            }, this.dropInterval);
+            this.resetGame();
+            this.lastDrop = performance.now();
+            this.gameLoop = true;
         }
     }
 
@@ -394,6 +491,7 @@ class Tetris {
         clearInterval(this.gameLoop);
         this.gameLoop = null;
         this.initGame();
+        document.getElementById('newHighScoreForm').classList.add('hidden');
         this.draw();
     }
 }
