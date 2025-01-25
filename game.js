@@ -98,11 +98,11 @@ class Tetris {
         // Key state tracking for responsive controls
         this.keyStates = new Set();
         
-        // Handle key events
+        // Handle key events only when game container is focused
         const handleKeyDown = (e) => {
-            if([32, 37, 38, 39, 40].includes(e.keyCode)) {
+            // Only handle game controls when the game container is focused
+            if (document.activeElement === gameContainer && [32, 37, 38, 39, 40].includes(e.keyCode)) {
                 e.preventDefault();
-                e.stopPropagation();
                 
                 if (!this.gameOver && !this.isPaused && !this.keyStates.has(e.keyCode)) {
                     this.keyStates.add(e.keyCode);
@@ -112,22 +112,21 @@ class Tetris {
         };
 
         const handleKeyUp = (e) => {
-            if([32, 37, 38, 39, 40].includes(e.keyCode)) {
-                e.preventDefault();
-                e.stopPropagation();
+            if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
                 this.keyStates.delete(e.keyCode);
             }
         };
 
-        // Add event listeners with proper options
-        window.addEventListener('keydown', handleKeyDown, { passive: false });
-        window.addEventListener('keyup', handleKeyUp, { passive: false });
-        gameContainer.addEventListener('keydown', handleKeyDown, { passive: false });
-        gameContainer.addEventListener('keyup', handleKeyUp, { passive: false });
+        // Add event listeners
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
         
         // Focus handling
         gameContainer.addEventListener('click', () => gameContainer.focus());
-        gameContainer.focus();
+        gameContainer.addEventListener('blur', () => {
+            // Clear key states when losing focus
+            this.keyStates.clear();
+        });
 
         // Other controls
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
