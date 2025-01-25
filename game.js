@@ -98,46 +98,19 @@ class Tetris {
     }
 
     bindEvents() {
-        const gameContainer = document.querySelector('.game-container');
-        
         // Key state tracking for responsive controls
         this.keyStates = new Set();
         
-        // Handle key events only when game container is focused
-        const handleKeyDown = (e) => {
-            // Only handle game controls when the game container is focused
-            if (document.activeElement === gameContainer && [32, 37, 38, 39, 40].includes(e.keyCode)) {
-                e.preventDefault();
-                
-                if (!this.gameOver && !this.isPaused && !this.keyStates.has(e.keyCode)) {
-                    this.keyStates.add(e.keyCode);
-                    this.handleGameInput(e.keyCode);
-                }
-            }
-        };
-
-        const handleKeyUp = (e) => {
-            if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
-                this.keyStates.delete(e.keyCode);
-            }
-        };
-
-        // Add event listeners
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
+        // Keyboard events
+        document.addEventListener('keydown', this.handleKeyDown.bind(this));
+        document.addEventListener('keyup', this.handleKeyUp.bind(this));
         
-        // Focus handling
-        gameContainer.addEventListener('click', (e) => {
-            // Don't focus if clicking on select or its children
-            if (!e.target.closest('.difficulty-selector')) {
-                gameContainer.focus();
-            }
-        });
-        gameContainer.addEventListener('blur', () => {
-            // Clear key states when losing focus
-            this.keyStates.clear();
-        });
-
+        // Mobile touch events
+        if ('ontouchstart' in window) {
+            this.setupMobileControls();
+            this.showMobileInstructions();
+        }
+        
         // Other controls
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
@@ -146,6 +119,116 @@ class Tetris {
             this.level = parseInt(e.target.value);
             this.updateSpeed();
         });
+        
+        // Focus handling for keyboard controls
+        const gameContainer = document.querySelector('.game-container');
+        gameContainer.addEventListener('click', (e) => {
+            if (!e.target.closest('.difficulty-selector')) {
+                gameContainer.focus();
+            }
+        });
+        gameContainer.addEventListener('blur', () => {
+            this.keyStates.clear();
+        });
+    }
+
+    setupMobileControls() {
+        const canvas = this.canvas;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        let lastTapTime = 0;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            if (!this.isRunning || this.gameOver || this.isPaused) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
+            
+            // Check for double tap
+            const timeSinceLastTap = touchStartTime - lastTapTime;
+            if (timeSinceLastTap < 300) {
+                this.hardDrop();
+            }
+            lastTapTime = touchStartTime;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!this.isRunning || this.gameOver || this.isPaused) return;
+            
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const touchEndX = touch.clientX;
+            const touchEndY = touch.clientY;
+            const touchDuration = Date.now() - touchStartTime;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const swipeThreshold = 30; // minimum distance for swipe
+            
+            // If it's a quick tap without much movement (less than swipe threshold)
+            if (touchDuration < 200 && Math.abs(deltaX) < swipeThreshold && Math.abs(deltaY) < swipeThreshold) {
+                this.rotatePiece();
+            }
+            // Handle horizontal swipes
+            else if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaY) < Math.abs(deltaX)) {
+                // Swipe right
+                if (deltaX > 0) {
+                    this.movePiece(1, 0);
+                }
+                // Swipe left
+                else {
+                    this.movePiece(-1, 0);
+                }
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!this.isRunning || this.gameOver || this.isPaused) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            const touchMoveY = touch.clientY;
+            
+            // If swiped down more than 30px, trigger soft drop
+            if (touchMoveY - touchStartY > 30) {
+                this.movePiece(0, 1);
+                touchStartY = touchMoveY;
+            }
+        });
+    }
+
+    showMobileInstructions() {
+        const instructions = document.getElementById('mobileInstructions');
+        const gotItBtn = document.getElementById('gotItBtn');
+        
+        if (instructions && gotItBtn) {
+            instructions.classList.remove('hidden');
+            
+            gotItBtn.addEventListener('click', () => {
+                instructions.classList.add('hidden');
+            });
+        }
+    }
+
+    handleKeyDown(e) {
+        // Only handle game controls when the game container is focused
+        if (document.activeElement === document.querySelector('.game-container') && [32, 37, 38, 39, 40].includes(e.keyCode)) {
+            e.preventDefault();
+            
+            if (!this.gameOver && !this.isPaused && !this.keyStates.has(e.keyCode)) {
+                this.keyStates.add(e.keyCode);
+                this.handleGameInput(e.keyCode);
+            }
+        }
+    }
+
+    handleKeyUp(e) {
+        if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
+            this.keyStates.delete(e.keyCode);
+        }
     }
 
     handleGameInput(keyCode) {

@@ -289,6 +289,75 @@ button:hover {
     display: none;
 }
 
+.mobile-instructions {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--primary-color);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 90%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.mobile-instructions h3 {
+    margin: 0 0 1rem;
+    font-size: 1.5rem;
+}
+
+.instruction-list {
+    text-align: left;
+    margin: 1rem 0;
+}
+
+.instruction-list p {
+    margin: 0.8rem 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.got-it-btn {
+    background: white;
+    color: var(--primary-color);
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 2rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.got-it-btn:hover {
+    transform: translateY(-2px);
+}
+
+.hidden {
+    display: none;
+}
+
+/* Only show mobile instructions on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .mobile-instructions:not(.hidden) {
+        display: block;
+    }
+}
+
+/* Hide mobile instructions on desktop */
+@media (hover: hover) and (pointer: fine) {
+    .mobile-instructions {
+        display: none !important;
+    }
+}
+
 @media (max-width: 768px) {
     .game-wrapper {
         flex-direction: column-reverse;
