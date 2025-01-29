@@ -2,8 +2,6 @@
 
 A modern, beautiful implementation of the classic Tetris game with a cute flying duck animation! This web-based version features multiple difficulty levels, high score tracking, and a responsive design that works on both desktop and mobile devices.
 
-![Duck Tetris Game](preview.png)
-
 ## 🎮 Features
 
 - **5 Difficulty Levels**: From beginner-friendly to extreme challenge
